@@ -1,7 +1,7 @@
 const properties = require('./json/properties.json');
 const users = require('./json/users.json');
 
-const { Pool } = require('pg')
+const { Pool } = require('pg');
 
 const pool = new Pool({
   host: 'localhost',
@@ -9,7 +9,7 @@ const pool = new Pool({
   user: 'vagrant',
   password: '123',
   database: 'lightbnb',
-})
+});
 
 /// Users
 
@@ -19,35 +19,19 @@ const pool = new Pool({
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function(email) {
-  // console.log(email)
-  // pool.query(
-  //   ` SELECT * FROM users 
-  //   LIMIT 10`, 
-  //   (err, res) => { console.log(res.rows)
 
-  //   }
-  // );
-
-  const queryString = `
-  SELECT * 
-  FROM users
-  WHERE email = $1
-  `;
-
-  // const value = [`${email}`]
-
-return pool.query(`
+  return pool.query(`
     SELECT * 
     FROM users
     WHERE email = $1
     `, [email]
-    )
+  )
     .then((res) => {
       if (res) {
-        return res.rows[0]
+        return res.rows[0];
       }
       return null;
-      })
+    })
     .catch(err => console.error('query error', err.stack));
   // let user;
   // for (const userId in users) {
@@ -59,7 +43,7 @@ return pool.query(`
   //   }
   // }
   // return Promise.resolve(user);
-}
+};
 exports.getUserWithEmail = getUserWithEmail;
 
 /**
@@ -75,15 +59,15 @@ const getUserWithId = function(id) {
   WHERE id = $1
   `, [id]
   )
-  .then((res) => {
-    if (res) {
-      return res.rows[0]
-    }
-    return null;
+    .then((res) => {
+      if (res) {
+        return res.rows[0];
+      }
+      return null;
     })
-  .catch(err => console.error('query error', err.stack));
+    .catch(err => console.error('query error', err.stack));
   // return Promise.resolve(users[id]);
-}
+};
 exports.getUserWithId = getUserWithId;
 
 
@@ -99,16 +83,16 @@ const addUser =  function(user) {
   VALUES ($1, $2, $3)
   RETURNING*;
   `, [user.name, user.email, user.password])
-  .then(res => {
-    return res.rows[0];
-  })
-  .catch(err => console.error('query error', err.stack));
+    .then(res => {
+      return res.rows[0];
+    })
+    .catch(err => console.error('query error', err.stack));
 
   // const userId = Object.keys(users).length + 1;
   // user.id = userId;
   // users[userId] = user;
   // return Promise.resolve(user);
-}
+};
 exports.addUser = addUser;
 
 /// Reservations
@@ -119,8 +103,37 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
-}
+  
+  return pool.query(`
+  SELECT 
+  properties.*, 
+  reservations.*, 
+  avg(rating) AS average_rating
+
+  FROM reservations
+
+  JOIN properties ON reservations.property_id = properties.id
+  JOIN property_reviews ON properties.id = property_reviews.property_id 
+
+  WHERE reservations.guest_id = $1
+
+  AND reservations.end_date < now()::date
+  GROUP BY properties.id, reservations.id
+  ORDER BY reservations.start_date
+  LIMIT $2;
+   `, [guest_id, limit]
+  )
+    .then((res) => {
+      if (res) {
+        return res.rows;
+      }
+      return null;
+    })
+    .catch(err => console.error('query error', err.stack));
+
+
+  // return getAllProperties(null, 2);
+};
 exports.getAllReservations = getAllReservations;
 
 /// Properties
@@ -139,14 +152,14 @@ const getAllProperties = function(options, limit = 10) {
   `, [limit])
 
   // return a promise that will result in res.rows
-  .then(res => (res.rows)
-  );
+    .then(res => (res.rows)
+    );
   // const limitedProperties = {};
   // for (let i = 1; i <= limit; i++) {
   //   limitedProperties[i] = properties[i];
   // }
   // return Promise.resolve(limitedProperties);
-}
+};
 exports.getAllProperties = getAllProperties;
 
 
@@ -160,5 +173,5 @@ const addProperty = function(property) {
   property.id = propertyId;
   properties[propertyId] = property;
   return Promise.resolve(property);
-}
+};
 exports.addProperty = addProperty;
